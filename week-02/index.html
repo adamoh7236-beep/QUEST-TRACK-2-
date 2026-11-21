@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>용어 퀴즈</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--ink:#1d2433;--sub:#667085;--line:#dfe3ee;--accent:#4f46e5;--ok:#16a34a;--okbg:#e8f7ee;--no:#dc2626;--nobg:#fdeaea}
+@media (prefers-color-scheme:dark){:root{--bg:#12141c;--card:#1c202c;--ink:#eef0f6;--sub:#9aa3b8;--line:#2f3547;--accent:#8b85ff;--ok:#4ade80;--okbg:#14301f;--no:#f87171;--nobg:#3a1a1d}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,"Malgun Gothic",sans-serif}
+main{max-width:640px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:1.5rem;margin:0 0 4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-top:16px}
+.sub{color:var(--sub);font-size:.9rem}
+button{font:inherit;color:inherit;cursor:pointer}
+.btn{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:10px 18px;font-weight:600}
+.btn:disabled{opacity:.4;cursor:default}
+.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 18px}
+.part{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:10px}
+.part:hover{border-color:var(--accent)}
+.part b{display:block}
+.opt{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:8px}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt.sel{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--card))}
+.opt.ok{border-color:var(--ok);background:var(--okbg)}
+.opt.no{border-color:var(--no);background:var(--nobg)}
+.opt.hit{border-color:#16a34a;background:#16a34a;color:#fff}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.ox{flex:1;font-size:1.6rem;font-weight:700;padding:18px}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;background:var(--accent)}
+.meta{display:flex;justify-content:space-between;gap:8px;font-size:.85rem;color:var(--sub)}
+.q{font-size:1.1rem;font-weight:600;margin:14px 0 4px}
+.fb{margin-top:14px;padding:12px 14px;border-radius:10px}
+.fb.ok{background:var(--okbg);border:1px solid var(--ok)}
+.fb.no{background:var(--nobg);border:1px solid var(--no)}
+.fb b{display:block}
+.mrow{margin-top:12px}
+.mrow .t{font-weight:600}
+.mrow .opt{display:inline-block;width:auto;margin:6px 6px 0 0;padding:6px 12px}
+.score{font-size:2.6rem;font-weight:800;margin:6px 0}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;min-height:40px}
+.chip{background:color-mix(in srgb,var(--accent) 15%,var(--card));border:1px solid var(--accent);border-radius:20px;padding:4px 12px}
+</style>
+</head>
+<body>
+<main>
+  <h1>용어 퀴즈</h1>
+  <div class="sub">오늘 배운 용어로 AI 에게 정확하게 부탁해 봐요</div>
+  <div id="app"></div>
+</main>
+<script>
+const PARTS = ["Part 1 · Git · GitHub · Pages","Part 2 · AI 를 이해하는 말","Part 3 · 찾아서 고치는 부탁"];
+const TYPE = {mc:"4지선다",fill:"빈칸",sit:"상황",fix:"부탁 고치기",ox:"OX",order:"순서",match:"짝 맞히기"};
+const STAR = ["","★ 쉬움","★★ 보통","★★★ 어려움"];
+// 유형 mc/fill/sit/fix: o=보기, a=정답 번호(1~4) · ox: a="O"|"X" · order: o=A~D 보기, a=정답 순서 · match: t=용어, d=설명, a=용어별 설명 번호
+const Q = [
+{n:1,p:0,k:"mc",d:1,q:"고칠 때마다 저장 지점을 찍어 두는, 파일의 세이브 포인트 같은 프로그램은?",o:["Python","Orca","Git","Node.js"],a:3,e:"Git 은 저장 지점을 찍어 두고, 망가지면 잘 되던 지점으로 돌아가게 해 줍니다."},
+{n:2,p:0,k:"fill",d:1,q:"Git 이 지켜보는 폴더를 (    )(이)라고 합니다.",o:["저장소","휴지통","바탕화면","토큰"],a:1,e:"저장소는 영어로 repository, 줄여서 repo 라고 합니다."},
+{n:3,p:0,k:"ox",d:2,q:"저장소 안에 숨어 있는 .git 폴더가 Git 의 기록장이다.",a:"O",e:"저장 지점(커밋)이 모두 .git 폴더 안에 기록됩니다."},
+{n:4,p:0,k:"mc",d:1,q:"바뀐 것을 묶어 저장 지점 하나로 남기는 일은?",o:["클론","풀","푸시","커밋"],a:4,e:"\"커밋해 줘\" 하면 쌓인 변경을 묶어 기록장에 점 하나로 남깁니다."},
+{n:5,p:0,k:"mc",d:2,q:"커밋 메시지(이름표)로 가장 좋은 것은?",o:["ㅇㅇ","점수 표시 추가","1","수정"],a:2,e:"무엇을 바꿨는지 한 줄로 적어야 나중에 이름표만 보고 그때를 찾습니다."},
+{n:6,p:0,k:"ox",d:2,q:"Ctrl+S 로 저장만 해 두어도 예전 모습으로 돌아갈 수 있는 점이 생긴다.",a:"X",e:"저장은 지금 모습으로 덮어쓰기, 돌아갈 점은 커밋해야 남습니다."},
+{n:7,p:0,k:"mc",d:2,q:"두 커밋을 비교했을 때 빨간색 − 줄은 무엇일까?",o:["들어온 줄","빠진 줄","그대로인 줄","오류가 난 줄"],a:2,e:"빨강 − 는 빠진 줄, 초록 + 는 들어온 줄입니다."},
+{n:8,p:0,k:"fill",d:2,q:"두 커밋의 차이, 즉 바뀐 줄을 영어로 (    )(이)라고 합니다.",o:["push","token","repo","diff"],a:4,e:"diff 는 차이(difference)를 줄인 말입니다."},
+{n:9,p:0,k:"match",d:2,q:"용어와 설명을 짝 지어 봅니다.",t:["로컬","원격","Git","GitHub"],d2:["인터넷에 있는 저장소","내 컴퓨터에 있는 저장소","저장소를 인터넷에 보관해 주는 사이트","내 컴퓨터에서 바뀐 것을 커밋으로 기록하는 프로그램"],a:[2,1,4,3],e:"Git 은 프로그램, GitHub 는 보관소입니다. 같은 저장소가 로컬과 원격 두 곳에 있습니다."},
+{n:10,p:0,k:"mc",d:1,q:"내 컴퓨터의 커밋을 GitHub 로 올려 보내는 일은?",o:["푸시","새로 고침","풀","커밋"],a:1,e:"푸시는 파일 하나가 아니라 저장 지점 묶음을 올립니다."},
+{n:11,p:0,k:"ox",d:2,q:"커밋을 하나도 하지 않았어도 푸시하면 바뀐 파일이 GitHub 로 올라간다.",a:"X",e:"푸시는 커밋을 올리는 일이라, 커밋이 없으면 올릴 것도 없습니다."},
+{n:12,p:0,k:"mc",d:2,q:"GitHub 에 있는 저장소를 내 컴퓨터로 처음 통째로 받아 오는 일은?",o:["풀","푸시","클론","커밋"],a:3,e:"처음 한 번은 클론, 이미 있으면 풀로 새 커밋만 받습니다."},
+{n:13,p:0,k:"sit",d:3,q:"집 컴퓨터에 이미 저장소가 있다. 학원에서 올린 새 커밋만 받아 오고 싶을 때 하는 부탁은?",o:["\"다시 푸시해 줘\"","\"저장소를 클론해 줘\"","\"GitHub 의 새 커밋을 풀 해 줘\"","\"지금 상태를 커밋해 줘\""],a:3,e:"이미 저장소가 있으면 통째로 받지 않고 풀로 새 커밋만 받습니다."},
+{n:14,p:0,k:"mc",d:1,q:"저장소의 HTML 을 인터넷 주소로 누구나 볼 수 있게 해 주는 무료 전시장은?",o:["GitHub Pages","커밋","컨텍스트","토큰"],a:1,e:"GitHub Pages 는 저장소의 HTML 을 인터넷 주소로 보여 줍니다."},
+{n:15,p:0,k:"fill",d:3,q:"주소 my-id.github.io/QUEST-TRACK-2/week-02/ 에서 QUEST-TRACK-2 는 (    ) 이름입니다.",o:["GitHub 아이디","폴더","모델","저장소"],a:4,e:"my-id 는 GitHub 아이디, QUEST-TRACK-2 는 저장소, week-02 는 폴더입니다."},
+{n:16,p:0,k:"order",d:3,q:"고친 게임을 친구가 주소로 보기까지, 일어나는 순서대로 놓아 봅니다.",o:{A:"파일 고치기",B:"푸시",C:"커밋",D:"1~2분 뒤 Pages 반영"},a:"ACBD",e:"고치고, 커밋해서 남기고, 푸시로 올리면 Pages 가 1~2분 뒤 새 모습을 보여 줍니다."},
+{n:17,p:0,k:"ox",d:2,q:"푸시하자마자 새로 고침했는데 옛 모습이 보이면 페이지가 망가진 것이다.",a:"X",e:"Pages 가 페이지를 다시 만드는 1~2분 동안은 옛 모습이 보입니다. 기다렸다가 F5 를 누릅니다."},
+{n:18,p:0,k:"mc",d:3,q:"친구가 내 컴퓨터 안 파일 주소(file:///C:/...)를 입력해도 게임이 열리지 않는 까닭은?",o:["커밋 메시지가 짧아서","친구 컴퓨터에는 그 파일이 없어서","인터넷이 느려서","파일 이름이 영어라서"],a:2,e:"그래서 늘 켜져 있는 서버에 두고, 누구나 인터넷 주소로 찾아오게 합니다."},
+
+{n:19,p:1,k:"mc",d:1,q:"LLM 은 무엇의 줄임말일까?",o:["Large Language Model","Long Line Maker","Local Link Manager","Light Learning Machine"],a:1,e:"엄청 많은 글을 읽고(Large) 사람의 말을 다루는(Language) 프로그램(Model)입니다."},
+{n:20,p:1,k:"ox",d:2,q:"AI 는 검색처럼 이미 있는 글을 찾아 그대로 보여 준다.",a:"X",e:"AI 는 새 문장을 한 조각씩 이어 씁니다. 그래서 답이 매번 조금씩 다릅니다."},
+{n:21,p:1,k:"fill",d:2,q:"LLM 은 수많은 글에서 (    ) 말을 가리고 맞혀 보는 연습으로 배웁니다.",o:["영어","다음","맨 처음","가장 긴"],a:2,e:"가린 다음 말을 맞혀 보고 정답과 비교하는 연습을 셀 수 없이 반복합니다."},
+{n:22,p:1,k:"order",d:2,q:"AI 가 답을 만드는 순서대로 놓아 봅니다.",o:{A:"그중 그럴듯한 말을 골라 붙인다",B:"지금까지의 글을 본다",C:"다음 말 후보를 떠올린다",D:"답이 끝날 때까지 반복한다"},a:"BCAD",e:"지금까지 글을 보고 후보를 떠올린 뒤, 그럴듯한 말을 골라 붙이기를 반복합니다."},
+{n:23,p:1,k:"mc",d:1,q:"모르는 것도 그럴듯하게 지어낸 틀린 말을 무엇이라고 할까?",o:["컨텍스트","커밋","클론","할루시네이션"],a:4,e:"LLM 은 모르는 것도 그럴듯하게 이어 쓸 때가 있습니다."},
+{n:24,p:1,k:"sit",d:3,q:"AI 가 \"퀴즈를 다 만들었습니다\" 라고 했다. 할루시네이션을 막으려면?",o:["결과를 직접 열어 정답을 확인한다","같은 부탁을 열 번 보낸다","바로 /clear 한다","그냥 믿고 친구에게 보낸다"],a:1,e:"다 됐다는 말만 믿지 않고, 결과를 직접 열어 내 눈으로 확인합니다."},
+{n:25,p:1,k:"mc",d:1,q:"AI 가 글을 읽을 때 잘게 나누는 조각의 이름은?",o:["폴더","픽셀","토큰","커밋"],a:3,e:"AI 는 글을 토큰이라는 조각으로 나누고, 다음 말 맞히기도 한 토큰씩 합니다."},
+{n:26,p:1,k:"ox",d:2,q:"글자 수와 토큰(조각) 수는 언제나 똑같다.",a:"X",e:"한글은 1~2글자, 영어는 단어나 단어 조각이 한 토큰이라 글자 수와 다릅니다."},
+{n:27,p:1,k:"mc",d:3,q:"토큰 수와 관계가 없는 것은?",o:["AI 를 쓰는 비용","답하는 데 걸리는 시간","내 GitHub 아이디","AI 가 한 번에 볼 수 있는 양"],a:3,e:"볼 수 있는 양, 비용, 시간은 모두 토큰으로 셉니다."},
+{n:28,p:1,k:"fill",d:1,q:"AI 가 지금 펼쳐 놓고 보고 있는 책상 전부를 (    )(이)라고 합니다.",o:["컨텍스트","저장소","모델","diff"],a:1,e:"대화, 읽은 파일, CLAUDE.md 가 책상(컨텍스트)에 올라갑니다."},
+{n:29,p:1,k:"mc",d:2,q:"Claude Code 하단 정보줄의 ① 막대가 보여 주는 것은?",o:["커밋 개수","인터넷 속도","지금 쓰는 모델","책상(컨텍스트)이 찬 정도"],a:4,e:"① 막대는 컨텍스트, ② 칸은 모델입니다."},
+{n:30,p:1,k:"ox",d:3,q:"책상이 가득 차면 지난 대화를 지우지 않고 요약본으로 접는다.",a:"O",e:"요약본은 짧아서 세부가 흐려질 수 있습니다."},
+{n:31,p:1,k:"sit",d:2,q:"다른 새 작업을 시작하기 전에 책상을 비우는 명령은?",o:["/quiz","/clear","/push","/save"],a:2,e:"/clear 는 새 작업 전에 책상(컨텍스트)을 비웁니다."},
+{n:32,p:1,k:"mc",d:3,q:"/clear 를 해도 규칙과 목표가 남아 있는 까닭은?",o:["Pages 에 올려 두어서","매번 다시 읽히는 CLAUDE.md 에 적어 두어서","커밋을 해 두어서","토큰이 많아서"],a:2,e:"CLAUDE.md 는 새 대화의 첫 부탁보다 먼저 다시 읽히는 메모입니다."},
+{n:33,p:1,k:"match",d:2,q:"Claude 모델 4형제와 설명을 짝 지어 봅니다.",t:["Fable","Opus","Sonnet","Haiku"],d2:["빠르고 균형 잡힌 모델","가장 빠르고 가벼운 모델","가장 똑똑하고 가장 비싼 모델","깊게 생각하는 강한 모델(우리 수업)"],a:[3,4,1,2],e:"똑똑할수록 느리고 비쌉니다. 우리 수업은 Opus 하나를 씁니다."},
+{n:34,p:1,k:"mc",d:1,q:"하단 정보줄 ② 칸에 보이는, 우리 수업에서 쓰는 모델은?",o:["Fable","Opus","Sonnet","Haiku"],a:2,e:"수업에서는 Opus 하나를 씁니다."},
+{n:35,p:1,k:"ox",d:1,q:"Claude 도 LLM 의 하나다.",a:"O",e:"Claude 처럼 엄청 많은 글을 읽고 말을 다루는 AI 를 LLM 이라고 부릅니다."},
+{n:36,p:1,k:"sit",d:2,q:"AI 에게 같은 질문을 다시 했더니 이번엔 다른 이름을 지어 줬다. 왜일까?",o:["인터넷이 끊겨서","커밋을 안 해서","AI 가 고장 나서","다음 말을 매번 새로 골라 이어 쓰기 때문에"],a:4,e:"AI 는 검색처럼 같은 글을 찾지 않고, 매번 새 문장을 한 조각씩 만듭니다."},
+
+{n:37,p:2,k:"mc",d:1,q:"Claude Code 에게 \"재생 버튼 색만 초록으로 바꿔 줘\" 라고 하면?",o:["그 부분을 찾아 그 부분만 고친다","아무것도 하지 않는다","새 파일을 만든다","파일 전체를 처음부터 다시 쓴다"],a:1,e:"파일을 직접 열어 읽고, 고칠 줄을 찾아 그 줄만 바꿉니다."},
+{n:38,p:2,k:"order",d:2,q:"Claude Code 가 고치는 4단계를 순서대로 놓아 봅니다.",o:{A:"파일 찾아 읽기",B:"그 부분만 수정하기",C:"부탁 이해하기",D:"고칠 곳 정하기"},a:"CADB",e:"먼저 읽고, 찾고, 그다음 고칩니다."},
+{n:39,p:2,k:"ox",d:2,q:"파일 전체를 통째로 다시 쓰면 잘 되던 곳까지 바뀔 수 있다.",a:"O",e:"TRACK 1 에서 재생 버튼만 바꾸려다 볼륨 칸이 사라진 것처럼, 통째로 다시 쓰면 다른 곳도 바뀝니다."},
+{n:40,p:2,k:"mc",d:2,q:"그 부분만 고칠 때 좋은 점이 아닌 것은?",o:["잘 되던 곳이 망가지지 않는다","바뀐 줄로 확인할 수 있다","파일이 저절로 Pages 에 올라간다","빠르다"],a:3,e:"Pages 에 올리려면 커밋하고 푸시해야 합니다."},
+{n:41,p:2,k:"sit",d:2,q:"\"색 바꿔 줘\" 라고만 부탁하면 어떤 일이 생길까?",o:["저절로 커밋된다","파일이 지워진다","색이 들어간 줄이 많아 AI 가 어디인지 헷갈린다","정확히 한 줄만 바로 바뀐다"],a:3,e:"모호하면 후보가 많아집니다. 어디를 바꿀지 말해 줍니다."},
+{n:42,p:2,k:"fill",d:1,q:"또렷한 부탁에는 어디 · 무엇 · (    )이(가) 들어갑니다.",o:["어떻게","언제","누가","왜"],a:1,e:"예: 재생 버튼(어디) 색(무엇)을 초록으로(어떻게)."},
+{n:43,p:2,k:"fix",d:2,q:"\"색 바꿔 줘\" 를 바르게 고친 부탁은?",o:["\"전부 다시 만들어 줘\"","\"아무 색이나 바꿔 줘\"","\"색 좀 예쁘게 해 줘\"","\"재생 버튼 색을 초록으로 바꿔 줘\""],a:4,e:"어디(재생 버튼) · 무엇(색) · 어떻게(초록으로)가 모두 들어 있습니다."},
+{n:44,p:2,k:"fix",d:3,q:"\"그거 좀 크게 해 줘\" 를 바르게 고친 부탁은?",o:["\"그거 진짜 크게 해 줘\"","\"곡 제목 글자 크기를 두 배로 키워 줘\"","\"다 크게 해 줘\"","\"처음부터 다시 만들어 줘\""],a:2,e:"\"그거\" 대신 어디를, \"크게\" 대신 얼마나를 말합니다."},
+{n:45,p:2,k:"sit",d:3,q:"Claude Code 가 고친 뒤 무엇이 바뀌었는지 확인하려면 어디를 보면 될까?",o:["토큰 수","빨강 · 초록으로 보이는 바뀐 줄","하단 정보줄 ② 칸","내 GitHub 아이디"],a:2,e:"빨강 − 는 빠진 줄, 초록 + 는 들어온 줄입니다."},
+{n:46,p:2,k:"match",d:3,q:"평소에 하는 말과, 용어로 바꾼 부탁을 짝 지어 봅니다.",t:["이거 남겨 둬","인터넷에 올려","다시 가져와","책상 좀 비워"],d2:["\"week-02 를 푸시해 줘\"","\"GitHub 의 새 커밋을 풀 해 줘\"","\"week-02 를 커밋해 줘\"","/clear 입력하기"],a:[3,1,2,4],e:"용어로 말하면 AI 가 되묻지 않고 한 번에 알아듣습니다."},
+{n:47,p:2,k:"ox",d:1,q:"부탁 끝에 \"나머지는 그대로 둬\" 를 붙이면 고칠 곳이 아닌 곳은 건드리지 말라는 뜻이 된다.",a:"O",e:"그 부분만 고치라는 뜻이 더 분명해집니다."},
+{n:48,p:2,k:"fill",d:2,q:"\"재생 버튼 색을 초록으로 바꿔 줘\" 에서 재생 버튼은 어디 · 무엇 · 어떻게 중 (    )입니다.",o:["무엇","어떻게","언제","어디"],a:4,e:"재생 버튼(어디) 색(무엇)을 초록으로(어떻게)."},
+{n:49,p:2,k:"fix",d:2,q:"\"글자 좀 바꿔 줘\" 를 바르게 고친 부탁은?",o:["\"곡 제목을 우주 산책 (라이브) 로 바꿔 줘\"","\"아무 글자나 바꿔 줘\"","\"처음부터 다시 써 줘\"","\"글자 다 바꿔 줘\""],a:1,e:"어디(곡 제목)와 어떻게(무엇으로 바꿀지)를 함께 말합니다."},
+{n:50,p:2,k:"order",d:3,q:"고친 결과를 친구에게 보여 주기까지 순서대로 놓아 봅니다.",o:{A:"바뀐 줄 확인하기",B:"커밋하고 푸시하기",C:"그 부분만 고쳐 달라고 부탁하기",D:"Pages 주소로 열어 보기"},a:"CABD",e:"부탁하고, 바뀐 줄을 확인한 뒤, 커밋 · 푸시하면 Pages 주소로 새 모습을 봅니다."}
+];
+
+const NUM = "①②③④", KO = "가나다라";
+const app = document.getElementById("app");
+let list = [], idx = 0, score = 0, part = -1;
+
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+
+function home(){
+  part = -1;
+  app.innerHTML = '<div class="card"><b>Part 를 골라 주세요</b>' +
+    PARTS.map((n,i)=>{const c=Q.filter(q=>q.p===i).length;return `<button class="part" data-p="${i}"><b>${n}</b><span class="sub">${c}문제</span></button>`;}).join("") + '</div>';
+  app.querySelectorAll(".part").forEach(b=>b.onclick=()=>start(+b.dataset.p));
+}
+
+function start(p){
+  part = p; list = Q.filter(q=>q.p===p); idx = 0; score = 0; show();
+}
+
+function show(){
+  const q = list[idx];
+  app.innerHTML = `<div class="card">
+    <div class="meta"><span>${PARTS[part]}</span><span>${idx+1} / ${list.length}</span></div>
+    <div class="bar"><i style="width:${idx/list.length*100}%"></i></div>
+    <div class="meta" style="margin-top:12px"><span>[Q${q.n} · ${TYPE[q.k]} · ${STAR[q.d]}]</span></div>
+    <div class="q">${esc(q.q)}</div>
+    <div id="body"></div><div id="fb"></div></div>`;
+  ({mc:choice,fill:choice,sit:choice,fix:choice,ox,order,match})[q.k](q, document.getElementById("body"));
+}
+
+function done(q, right, answerText){
+  if(right) score++;
+  const last = idx === list.length-1;
+  document.getElementById("fb").innerHTML =
+    `<div class="fb ${right?"ok":"no"}"><b>${right?"⭕ 맞았어요!":"❌ 아쉬워요"}</b>` +
+    (right?"":`정답: ${esc(answerText)}<br>`) + esc(q.e) + `</div>` +
+    `<div class="row"><button class="btn" id="next">${last?"결과 보기":"다음 문제"}</button></div>`;
+  document.getElementById("next").onclick = () => { idx++; idx<list.length ? show() : result(); };
+  document.getElementById("next").focus();
+}
+
+function choice(q, el){
+  el.innerHTML = q.o.map((t,i)=>`<button class="opt" data-i="${i+1}">${NUM[i]} ${esc(t)}</button>`).join("");
+  const bs = el.querySelectorAll(".opt");
+  bs.forEach(b=>b.onclick=()=>{
+    const pick = +b.dataset.i;
+    bs.forEach(x=>{x.disabled=true; if(+x.dataset.i===q.a) x.classList.add("ok");});
+    if(pick!==q.a) b.classList.add("no"); else b.classList.add("hit");
+    done(q, pick===q.a, `${NUM[q.a-1]} ${q.o[q.a-1]}`);
+  });
+}
+
+function ox(q, el){
+  el.innerHTML = '<div class="row"><button class="opt ox" data-v="O">O</button><button class="opt ox" data-v="X">X</button></div>';
+  const bs = el.querySelectorAll(".ox");
+  bs.forEach(b=>b.onclick=()=>{
+    bs.forEach(x=>{x.disabled=true; if(x.dataset.v===q.a) x.classList.add("ok");});
+    if(b.dataset.v!==q.a) b.classList.add("no"); else b.classList.add("hit");
+    done(q, b.dataset.v===q.a, q.a);
+  });
+}
+
+function order(q, el){
+  let seq = "";
+  const render = () => {
+    el.innerHTML = Object.keys(q.o).map(k=>`<button class="opt ${seq.includes(k)?"sel":""}" data-k="${k}" ${seq.includes(k)?"disabled":""}><b>${k}</b> ${esc(q.o[k])}</button>`).join("") +
+      `<div class="sub" style="margin-top:12px">고른 순서</div><div class="chips">${[...seq].map(k=>`<span class="chip">${k}</span>`).join("")}</div>
+       <div class="row"><button class="ghost" id="rs">다시 고르기</button><button class="btn" id="ok" ${seq.length<4?"disabled":""}>확인</button></div>`;
+    el.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{seq+=b.dataset.k; render();});
+    el.querySelector("#rs").onclick = () => {seq=""; render();};
+    el.querySelector("#ok").onclick = () => {
+      el.querySelectorAll("button").forEach(b=>b.disabled=true);
+      done(q, seq===q.a, [...q.a].join(" → "));
+    };
+  };
+  render();
+}
+
+function match(q, el){
+  const pick = [0,0,0,0];
+  const render = () => {
+    el.innerHTML = '<div class="sub">설명</div>' + q.d2.map((t,i)=>`<div>${KO[i]} ${esc(t)}</div>`).join("") +
+      q.t.map((t,i)=>`<div class="mrow"><span class="t">${i+1} ${esc(t)}</span><br>` +
+        [0,1,2,3].map(j=>`<button class="opt ${pick[i]===j+1?"sel":""}" data-i="${i}" data-j="${j+1}">${KO[j]}</button>`).join("") + `</div>`).join("") +
+      `<div class="row"><button class="btn" id="ok" ${pick.includes(0)?"disabled":""}>확인</button></div>`;
+    el.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{pick[+b.dataset.i]=+b.dataset.j; render();});
+    el.querySelector("#ok").onclick = () => {
+      el.querySelectorAll("button").forEach(b=>b.disabled=true);
+      done(q, pick.every((v,i)=>v===q.a[i]), q.a.map((v,i)=>`${i+1}-${KO[v-1]}`).join(" · "));
+    };
+  };
+  render();
+}
+
+function result(){
+  const total = list.length, pct = Math.round(score/total*100);
+  const msg = pct===100?"완벽해요! 🎉":pct>=70?"잘했어요! 👍":"한 번 더 풀어 보면 더 잘할 수 있어요.";
+  app.innerHTML = `<div class="card"><div class="sub">${PARTS[part]}</div>
+    <div class="score">${score} / ${total}점</div><div>${msg}</div>
+    <div class="row" style="margin-top:16px"><button class="btn" id="again">다시 풀기</button><button class="ghost" id="home">Part 다시 고르기</button></div></div>`;
+  document.getElementById("again").onclick = () => start(part);
+  document.getElementById("home").onclick = home;
+}
+
+home();
+</script>
+</body>
+</html>
